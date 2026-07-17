@@ -7,6 +7,26 @@ backend/.pytest_cache/
 
 # Node modules
 node_modules/
+frontend/node_modules/
 
-# Streamlit legacy (just in case)
+# Next.js build output
+frontend/.next/
+
+# Vercel
+.vercel/
+frontend/.vercel/
+
+# Environment files
+.env.local
+frontend/.env.local
+
+# Streamlit legacy
 .streamlit/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
