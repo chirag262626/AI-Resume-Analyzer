@@ -4,6 +4,7 @@ Resume analyzer service — orchestrates file parsing and similarity scoring.
 
 from .pdf_parser import extract_text_from_pdf, extract_text_from_docx
 from .text_processing import calculate_similarity
+from .skill_extractor import analyze_skill_gap
 
 
 def _get_score_details(score: float) -> dict:
@@ -71,8 +72,11 @@ def analyze_resume(file_bytes: bytes, filename: str, job_description: str) -> di
 
     score, _, _ = calculate_similarity(resume_text, job_description)
     details = _get_score_details(score)
+    
+    skill_analysis = analyze_skill_gap(resume_text, job_description)
 
     return {
         "score": score,
         **details,
+        **skill_analysis
     }
