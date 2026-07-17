@@ -1,0 +1,12 @@
+# Python backend
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/.pytest_cache/
+
+# Node modules
+node_modules/
+
+# Streamlit legacy (just in case)
+.streamlit/

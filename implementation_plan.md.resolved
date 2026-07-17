@@ -1,0 +1,104 @@
+# Refactor ATS Resume Analyzer → Full-Stack SaaS Application
+
+Refactor the existing Streamlit ATS Resume Analyzer into a production-ready full-stack application with a FastAPI backend and Next.js frontend, preserving all business logic (TF-IDF + Cosine Similarity scoring, PDF parsing, NLTK text processing).
+
+## Proposed Changes
+
+### Backend (FastAPI)
+
+#### [NEW] `backend/main.py`
+- FastAPI app with CORS middleware (configurable origins via env var)
+- `POST /api/analyze` — accepts multipart file upload (PDF/DOCX) + `job_description` form field → returns JSON `{ score, label, feedback }`
+- `GET /api/health` — health check endpoint
+
+#### [NEW] `backend/services/pdf_parser.py`
+- Port [extract_text_from_pdf()](file:///c:/Users/chira/OneDrive/Desktop/AI-Resume-Reviewer-ATS-Analyzer-main/utils/pdf_parser.py#5-16) from existing code (PyPDF2), remove Streamlit dependency
+- Add `extract_text_from_docx()` using `python-docx`
+
+#### [NEW] `backend/services/text_processing.py`
+- Port [clean_text()](file:///c:/Users/chira/OneDrive/Desktop/AI-Resume-Reviewer-ATS-Analyzer-main/utils/text_processing.py#14-20), [remove_stopwords()](file:///c:/Users/chira/OneDrive/Desktop/AI-Resume-Reviewer-ATS-Analyzer-main/utils/text_processing.py#22-27), [calculate_similarity()](file:///c:/Users/chira/OneDrive/Desktop/AI-Resume-Reviewer-ATS-Analyzer-main/utils/text_processing.py#29-41) as-is
+- NLTK downloads at startup
+
+#### [NEW] `backend/services/analyzer.py`
+- `analyze_resume(file_bytes, filename, job_description)` — orchestrates parsing + scoring
+- Returns structured result dict with score, label, color, and feedback text
+
+#### [NEW] `backend/requirements.txt`
+- `fastapi`, `uvicorn`, `python-multipart`, `PyPDF2`, `python-docx`, `scikit-learn`, `nltk`
+
+#### [NEW] `backend/.env.example`
+- `CORS_ORIGINS=http://localhost:3000`
+
+---
+
+### Frontend (Next.js + TypeScript + Tailwind CSS)
+
+#### [NEW] `frontend/` — Next.js project scaffolded via `create-next-app`
+- TypeScript, Tailwind CSS, App Router
+
+#### Key components:
+| Component | Purpose |
+|---|---|
+| `app/page.tsx` | Main page — hero, upload form, results |
+| `components/Hero.tsx` | Animated gradient hero banner |
+| `components/FileUpload.tsx` | Drag-and-drop PDF/DOCX upload with validation |
+| `components/JobDescription.tsx` | Textarea with character count |
+| `components/ResultsCard.tsx` | Animated score display, gauge bar, feedback |
+| `components/Navbar.tsx` | Top navigation bar with logo |
+| `components/Footer.tsx` | Footer with credits |
+| `components/Toast.tsx` | Toast notification system |
+| `lib/api.ts` | API client for backend communication |
+
+#### Design system:
+- Dark theme by default (slate/zinc palette with purple/cyan accents matching existing brand colors `#6C63FF` / `#48C6EF`)
+- Inter font from Google Fonts
+- Glassmorphism cards, gradient accents, micro-animations
+- Fully responsive (mobile-first)
+
+---
+
+### Project Root
+
+#### [NEW] [README.md](file:///c:/Users/chira/OneDrive/Desktop/AI-Resume-Reviewer-ATS-Analyzer-main/README.md)
+- Professional README with features, architecture diagram, local setup, deployment instructions, API docs
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Deployment credentials needed**: When we reach the deployment phase, I will need you to:
+> 1. Authenticate with **GitHub** to push to a new repository
+> 2. Authenticate with **Vercel** to deploy the frontend
+> 3. Authenticate with **Render** to deploy the backend
+>
+> I will prompt you at that point — no action needed now.
+
+> [!NOTE]
+> The existing app only uses **TF-IDF + Cosine Similarity** (no external AI/LLM APIs), so **no API keys** are needed for the core functionality. The app is fully self-contained.
+
+## Verification Plan
+
+### Automated — Backend API Test
+1. Start the backend: `cd backend && pip install -r requirements.txt && uvicorn main:app --reload`
+2. Test health endpoint: `curl http://localhost:8000/api/health`
+3. Test analyze endpoint with a sample PDF:
+   ```bash
+   curl -X POST http://localhost:8000/api/analyze \
+     -F "file=@test_resume.pdf" \
+     -F "job_description=python developer with experience in machine learning"
+   ```
+4. Verify JSON response has [score](file:///c:/Users/chira/OneDrive/Desktop/AI-Resume-Reviewer-ATS-Analyzer-main/components/results.py#4-12), `label`, `feedback` fields
+
+### Automated — Frontend Build
+1. `cd frontend && npm install && npm run build` — verify no TypeScript/build errors
+
+### Manual — End-to-End Browser Test
+1. Start backend on port 8000, frontend on port 3000
+2. Open `http://localhost:3000` in browser
+3. Upload a PDF resume
+4. Paste a job description
+5. Click "Analyze Match"
+6. Verify: loading state appears → results display with score, gauge, and feedback
+7. Verify: responsive layout works on mobile viewport
+8. Verify: error states work (no file, no JD, invalid file type)
