@@ -71,12 +71,24 @@ def analyze_resume(file_bytes: bytes, filename: str, job_description: str) -> di
         raise ValueError("Could not extract text from the uploaded file. Please try another file.")
 
     score, _, _ = calculate_similarity(resume_text, job_description)
-    details = _get_score_details(score)
     
     skill_analysis = analyze_skill_gap(resume_text, job_description)
+    
+    # Blend the harsh Cosine Similarity contextual score with the discrete Keyword Match score
+    # We weight the Keyword Match higher (60%) since hard skills are usually the primary ATS filter
+    if skill_analysis.get("total_jd_skills_found", 0) > 0:
+        base_tf_idf = score
+        skill_match = skill_analysis["skill_match_percentage"]
+        final_score = (base_tf_idf * 0.4) + (skill_match * 0.6)
+    else:
+        final_score = score
+        
+    final_score = round(final_score, 1)
+
+    details = _get_score_details(final_score)
 
     return {
-        "score": score,
+        "score": final_score,
         **details,
         **skill_analysis
     }
